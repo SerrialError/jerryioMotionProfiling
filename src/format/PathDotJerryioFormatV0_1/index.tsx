@@ -34,7 +34,7 @@ export class PathDotJerryioFormatV0_1 implements Format {
   }
 
   getDescription(): string {
-    return "The default and official format for path planning purposes and custom library. Output is in cm, rpm.";
+    return "The default and official format for path planning purposes and custom library. Output is in centimeters, rpm.";
   }
 
   register(app: MainApp, ui: UserInterface): void {
@@ -77,20 +77,39 @@ export class PathDotJerryioFormatV0_1 implements Format {
 
     let fileContent = "";
 
-    const uc = new UnitConverter(app.gc.uol, UnitOfLength.Centimeter);
+    const uc = new UnitConverter(app.gc.uol, UnitOfLength.Meter);
     const density = new Quantity(app.gc.pointDensity, app.gc.uol);
 
     for (const path of app.paths) {
       fileContent += `#PATH-POINTS-START ${path.name}\n`;
-
       const points = getPathPoints(path, density).points;
+	  let i = 1;
+	  path.segments.forEach(segment => {
+		  if (segment.isCubic()) {
+			  fileContent += 'splineName = "spline' + i + '";\n';
+			  fileContent += `controlPoints = {\n`;
+									  segment.controls.forEach((control, index) => {
+										  let x = uc.fromAtoB(control.x).toUser();
+										  let y = uc.fromAtoB(control.y).toUser();
+										  fileContent += `  { ${x}, ${y} }`;
+										  if (index < segment.controls.length - 1) {
+											  fileContent += `, \n`;
+										  }
+									  });
+									  fileContent += '};\n';
+									  fileContent += 'keyFrameVelocityList = {';
+									  fileContent += points.map(point => {
+										  const x = uc.fromAtoB(point.x).toUser();
+										  const y = uc.fromAtoB(point.y).toUser();
+										  return `{${x}, ${y}, ${point.speed.toUser()}}`;
+									  }).join(', ');
+									  fileContent += '};\n';
+		    i += 1;
+			fileContent += 'printVels(splineName, controlPoints, keyFrameVelocityList, false);\n';
+		  }
+	  });
 
-      for (const point of points) {
-        const x = uc.fromAtoB(point.x).toUser();
-        const y = uc.fromAtoB(point.y).toUser();
-        if (isCoordinateWithHeading(point)) fileContent += `${x},${y},${point.speed.toUser()},${point.heading}\n`;
-        else fileContent += `${x},${y},${point.speed.toUser()}\n`;
-      }
+
     }
 
     fileContent += "#PATH.JERRYIO-DATA " + JSON.stringify(app.exportPDJData());

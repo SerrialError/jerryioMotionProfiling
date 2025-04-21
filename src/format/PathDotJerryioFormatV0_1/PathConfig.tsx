@@ -20,10 +20,10 @@ export class PathConfigImpl implements PathConfig {
   @Expose()
   speedLimit: EditableNumberRange = {
     minLimit: { value: 0, label: "0" },
-    maxLimit: { value: 600, label: "600" },
-    step: 1,
-    from: 40,
-    to: 120
+    maxLimit: { value: 5.4, label: "5.4" },
+    step: 0.01,
+    from: 0,
+    to: 5.4
   };
   @ValidateEditableNumberRange(-Infinity, Infinity)
   @Expose()
