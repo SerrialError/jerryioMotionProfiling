@@ -82,36 +82,29 @@ export class PathDotJerryioFormatV0_1 implements Format {
 
     for (const path of app.paths) {
       fileContent += `#PATH-POINTS-START ${path.name}\n`;
+
       const points = getPathPoints(path, density).points;
-	  let i = 1;
-	  path.segments.forEach(segment => {
-		  if (segment.isCubic()) {
-			  fileContent += 'splineName = "spline' + i + '";\n';
-			  fileContent += `controlPoints = {\n`;
-									  segment.controls.forEach((control, index) => {
-										  let x = uc.fromAtoB(control.x).toUser();
-										  let y = uc.fromAtoB(control.y).toUser();
-										  fileContent += `  { ${x}, ${y} }`;
-										  if (index < segment.controls.length - 1) {
-											  fileContent += `, \n`;
-										  }
-									  });
-									  fileContent += '};\n';
-									  fileContent += 'keyFrameVelocityList = {';
-									  fileContent += points.map(point => {
-										  const x = uc.fromAtoB(point.x).toUser();
-										  const y = uc.fromAtoB(point.y).toUser();
-										  return `{${x}, ${y}, ${point.speed.toUser()}}`;
-									  }).join(', ');
-									  fileContent += '};\n';
-		    i += 1;
-			fileContent += 'printVels(splineName, controlPoints, keyFrameVelocityList, false);\n';
-		  }
-	  });
 
-
+      let i = 1;
+      for (const segment of path.segments) {
+        const relatedPoints = points.filter(point => point.sampleRef === segment);
+        if (segment.isCubic()) {
+          fileContent += 'splineName = "spline' + i + '";\n';
+          fileContent += 'controlPoints = {\n';
+          for (const control of [...segment.controls]) {
+            fileContent += `  { ${uc.fromAtoB(control.x).toUser()}, ${uc.fromAtoB(control.y).toUser()} }`;
+          }
+          fileContent += '};\n';
+          fileContent += 'keyFrameVelocityList = {';
+          for (const point of relatedPoints) {
+            fileContent += `{${uc.fromAtoB(point.x).toUser()}, ${uc.fromAtoB(point.y).toUser()}, ${point.speed.toUser()}}`;
+          }
+          fileContent += '};\n';
+          fileContent += 'printVels(splineName, controlPoints, keyFrameVelocityList, false);\n';
+          i += 1;
+        }
+      }
     }
-
     fileContent += "#PATH.JERRYIO-DATA " + JSON.stringify(app.exportPDJData());
 
     return new TextEncoder().encode(fileContent);
