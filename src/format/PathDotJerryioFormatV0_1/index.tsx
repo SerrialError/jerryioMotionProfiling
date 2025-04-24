@@ -78,6 +78,7 @@ export class PathDotJerryioFormatV0_1 implements Format {
     let fileContent = "";
 
     const uc = new UnitConverter(app.gc.uol, UnitOfLength.Meter);
+    const uc_linear = new UnitConverter(app.gc.uol, UnitOfLength.Inch);
     const density = new Quantity(app.gc.pointDensity, app.gc.uol);
 
 for (const path of app.paths) {
@@ -122,8 +123,13 @@ for (const path of app.paths) {
         fileContent += `printVels(splineName, controlPoints, keyFrameVelocityList, true);\n\n`;
 	  }
       i += 1;
+    } else {
+		const end = segment.controls[segment.controls.length - 1];
+      fileContent += `moveToPoint(${uc_linear.fromAtoB(end.x).toUser()}, ${uc_linear.fromAtoB(end.y).toUser()}, 2000);\n`;
+	
     }
   }
+
 }
 
 	fileContent += "#PATH.JERRYIO-DATA " + JSON.stringify(app.exportPDJData());
