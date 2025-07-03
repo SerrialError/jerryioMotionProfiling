@@ -109,7 +109,7 @@ export interface Format {
    * @throws Error if the file can not be exported
    * @returns the path file buffer in ArrayBuffer
    */
-  exportFile(): ArrayBuffer;
+  exportFile(): ArrayBufferView<ArrayBufferLike>;
 }
 
 export function getAllGeneralFormats(): Format[] {
@@ -226,10 +226,26 @@ const convertFromV0_7_0ToV0_8_0: PathFileDataConverter = {
   }
 };
 
-const convertFromV0_8_0ToCurrentAppVersion: PathFileDataConverter = {
+const convertFromV0_8_0ToV0_9_0: PathFileDataConverter = {
   version: new Range("~0.8"),
   convert: (data: Record<string, any>): void => {
-    // From v0.8.0 to current app version
+    // From v0.8.0 to v0.9.0
+    data.appVersion = "0.9.0";
+  }
+};
+
+const convertFromV0_9_0ToV0_10_0: PathFileDataConverter = {
+  version: new Range("~0.9"),
+  convert: (data: Record<string, any>): void => {
+    // From v0.9.0 to v0.10.0
+    data.appVersion = "0.10.0";
+  }
+};
+
+const convertFromV0_10_0ToCurrentAppVersion: PathFileDataConverter = {
+  version: new Range("~0.10"),
+  convert: (data: Record<string, any>): void => {
+    // From v0.10.0 to current app version
     data.appVersion = APP_VERSION.version;
   }
 };
@@ -243,7 +259,9 @@ export function convertPathFileData(data: Record<string, any>): boolean {
     convertFromV0_5_0ToV0_6_0,
     convertFromV0_6_0ToV0_7_0,
     convertFromV0_7_0ToV0_8_0,
-    convertFromV0_8_0ToCurrentAppVersion
+    convertFromV0_8_0ToV0_9_0,
+    convertFromV0_9_0ToV0_10_0,
+    convertFromV0_10_0ToCurrentAppVersion
   ]) {
     if (version.test(data.appVersion)) {
       convert(data);
