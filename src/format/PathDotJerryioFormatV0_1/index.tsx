@@ -82,47 +82,35 @@ export class PathDotJerryioFormatV0_1 implements Format {
     const density = new Quantity(app.gc.pointDensity, app.gc.uol);
 
 for (const path of app.paths) {
-  fileContent += `#PATH-POINTS-START ${path.name}\n\n`;
+  fileContent += `#PATH-START ${path.name}`;
 
   const points = getPathPoints(path, density).points;
 
-  let i = 1;
   for (const segment of path.segments) {
-    let velContent = "";
     const relatedPoints = points.filter(point => point.sampleRef === segment);
     
     if (segment.isCubic()) {
-      fileContent += `splineName = "spline${i}";\n`;
-
+      fileContent += `\n#POINTS-START \n`;
       // Control Points Formatting
-      fileContent += "controlPoints = {\n";
       const controlLines = [...segment.controls].map(
-        control => `  { ${uc.fromAtoB(control.x).toUser()}, ${uc.fromAtoB(control.y).toUser()} }`
+        control => `${uc.fromAtoB(control.x).toUser()}, ${uc.fromAtoB(control.y).toUser()}`
       );
-      fileContent += controlLines.join(",\n") + "\n";
-      fileContent += "};\n";
+      fileContent += controlLines.join("\n");
 
       // Check if all except the last velocity are 5.4
       const allButLastAreStatic = relatedPoints.length > 1 &&
         relatedPoints.slice(0, -1).every(point => point.speed.toUser() === 5.4);
 
       // Key Frame Velocity List Formatting
-      fileContent += "keyFrameVelocityList = ";
+      fileContent += `\n#VELOCITIES-START \n`;
       if (allButLastAreStatic) {
-        fileContent += "{{0, 0, 0}};\n";
+        fileContent += "0, 0, 0";
       } else {
-        fileContent += "{";
         const velocityLines = relatedPoints.map(
-          point => ` {${uc.fromAtoB(point.x).toUser()}, ${uc.fromAtoB(point.y).toUser()}, ${point.speed.toUser()}}`
+          point => `${uc.fromAtoB(point.x).toUser()}, ${uc.fromAtoB(point.y).toUser()}, ${point.speed.toUser()}`
         );
-        fileContent += velocityLines.join(",") + "};\n";
+        fileContent += velocityLines.join("\n");
       }
-      if (allButLastAreStatic) {
-        fileContent += `printVels(splineName, controlPoints, keyFrameVelocityList, false);\n\n`;
-	  } else {
-        fileContent += `printVels(splineName, controlPoints, keyFrameVelocityList, true);\n\n`;
-	  }
-      i += 1;
     } else {
 		const end = segment.controls[segment.controls.length - 1];
       fileContent += `moveToPoint(${uc_linear.fromAtoB(end.x).toUser()}, ${uc_linear.fromAtoB(end.y).toUser()}, 2000);\n`;
@@ -132,7 +120,7 @@ for (const path of app.paths) {
 
 }
 
-	fileContent += "#PATH.JERRYIO-DATA " + JSON.stringify(app.exportPDJData());
+	fileContent += "\n#PATH.JERRYIO-DATA " + JSON.stringify(app.exportPDJData());
 
     return new TextEncoder().encode(fileContent);
   }
